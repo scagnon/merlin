@@ -1,0 +1,20 @@
+{
+    "description": "Arcad Demo",
+    "version": "0.0.1",
+    "includePath": [
+        "MERLIN_SRC/QPROTOSRC"
+    ],
+    "repository": "git@github.com:scagnon/merlin.git",
+    "objlib": "&verlibmerlin",
+    "curlib": "*CRTDFT",
+    "extensions": {
+        "arcad": {
+            "code": "MERLIN",
+            "libraryPrefix": "MER",
+            "iasp": "*SYSBAS",
+            "validated": true
+        }
+    },
+    "buildCommand": "elias compile {branch}",
+    "compileCommand": "elias compile {branch} -f {filename}"
+}
