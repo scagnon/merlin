@@ -9,4 +9,5 @@
                           TOLIB(QTEMP) NEWOBJ(DETORD) CST(*NO) +
                           TRG(*NO)
              OVRDBF     FILE(TMPDETORD) TOFILE(QTEMP/DETORD)
+             MONMSG     MSGID(CPF0000)
              CRTORD     CUID(&CUID)
