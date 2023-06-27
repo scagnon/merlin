@@ -1,110 +1,125 @@
-      *%METADATA                                                                          *
-      * %TEXT                                                                             *
-      *%EMETADATA                                                                         *
-     H dftactgrp(*no)
+**FREE
+//%METADATA                                                                          *
+// %TEXT                                                                             *
+//%EMETADATA                                                                         *
+Ctl-Opt dftactgrp(*no);
 
-     Farticle1  UF   E           K DISK
+Dcl-F article1   Usage(*Update:*Delete) Keyed;
 
-      /COPY ../QPROTOSRC/LOG.RPGLEINC
+/COPY ../QPROTOSRC/LOG.RPGLEINC
 
-     d UpdArt          pr
-     d   qty                          5  0 value
-     d   id                                like(new.ODARID)
+Dcl-Pr UpdArt;
+  qty             Packed(5:0)     value;
+  id              like(new.ODARID);
+End-Pr;
 
-     D PARM1           DS
-      * Physical file name
-     D  FNAME                        10
-      * Physical file library
-     D  LNAME                        10
-      * Member name
-     D  MNAME                        10
-      * Trigger event 1=Ins, 2=Del, 3=Upd
-     D  TEVEN                         1
-      * Trigger time  1=After, 2=Before
-     D  TTIME                         1
-      * Commit lock level
-     D  CMTLCK                        1
-      * Reserved
-     D                                3
-      * CCSID
-     D  CCSID                        10i 0
-      * Reserved
-     D                                8
-      * Offset to the original record
-     D  OLDOFF                       10i 0
-      * length of the original record
-     D  OLDLEN                       10i 0
-      * Offset to the original record null byte map
-     D  ONOFF                        10i 0
-      * length of the null byte map
-     D  ONLEN                        10i 0
-      * Offset to the new record
-     D  NEWOFF                       10i 0
-      * length of the new record
-     D  NEWLEN                       10i 0
-      * Offset to the new record null byte map
-     D  NNOFF                        10i 0
-      * length of the null byte map
-     D  NNLEN                        10i 0
+Dcl-S pDs_PiParm_001  Pointer;
+Dcl-Ds PARM1
+             Based(pDs_PiParm_001);
+// Physical file name
+  FNAME           Char(10);
+// Physical file library
+  LNAME           Char(10);
+// Member name
+  MNAME           Char(10);
+// Trigger event 1=Ins, 2=Del, 3=Upd
+  TEVEN           Char(1);
+// Trigger time  1=After, 2=Before
+  TTIME           Char(1);
+// Commit lock level
+  CMTLCK          Char(1);
+// Reserved
+  *n              Char(3);
+// CCSID
+  CCSID           Int(10);
+// Reserved
+  *n              Char(8);
+// Offset to the original record
+  OLDOFF          Int(10);
+// length of the original record
+  OLDLEN          Int(10);
+// Offset to the original record null byte map
+  ONOFF           Int(10);
+// length of the null byte map
+  ONLEN           Int(10);
+// Offset to the new record
+  NEWOFF          Int(10);
+// length of the new record
+  NEWLEN          Int(10);
+// Offset to the new record null byte map
+  NNOFF           Int(10);
+// length of the null byte map
+  NNLEN           Int(10);
+End-Ds;
 
-      * Trigger Buffer Length
-     D  parm2          s             10i 0
+// Trigger Buffer Length
 
-      * Record to be inserted or new values
-     D NEW           E DS                  EXTNAME(detord)
-     D                                     qualified
-     D                                     based(pn)
+// Record to be inserted or new values
+Dcl-Ds NEW ExtName('DETORD')
+           qualified
+           based(pn);
+End-Ds;
 
-      * Record to be deleted or old values
-     D OLD           E DS                  EXTNAME(detord)
-     D                                     qualified
-     D                                     based(po)
+// Record to be deleted or old values
+Dcl-Ds OLD ExtName('DETORD')
+           qualified
+           based(po);
+End-Ds;
+// Prototype for ORD700
+Dcl-Pr Pgm_ORD700 ExtPgm('ORD700');
+  Ds_PiParm_001   LikeDs(PARM1);
+  PARM2           Int(10);
+End-Pr;
+// Procedure interface for ORD700
+Dcl-Pi Pgm_ORD700;
+  Ds_PiParm_001   LikeDs(PARM1);
+  PARM2           Int(10);
+End-Pi;
 
-      * SET UP THE ENTRY PARAMETER LIST.
+// SET UP THE ENTRY PARAMETER LIST.
 
-     C     *ENTRY        PLIST
-     C                   PARM                    PARM1
-     C                   PARM                    PARM2
-     C                   if                      %parms = 0
-     C                   seton                                        lr
-     C                   return
-     C                   ENDIF
-     C                   select
-     c                   when      teven = '1'
-     c                   eval      pn = %addr(parm1) + newoff
-     c                   callp     UpdArt(new.odqty:new.odarid)
-     c                   when      teven = '2'
-     c                   eval      po = %addr(parm1) + oldoff
-     c                   callp(e)  addlogEntry('ORD700:Order Line deleted ' +
-     c                             %char(Old.odorid) + ' ' + %char(Old.odline)
-     c                              + ' article : ' + old.odarid
-     c                              + ' quantity : ' + %char(old.odqty))
-     c                   callp     UpdArt(-Old.odqty + Old.odqtyliv:old.odarid)
-     c                   when      teven = '3'
-     c                   eval      pn = %addr(parm1) + newoff
-     c                   eval      po = %addr(parm1) + oldoff
-     c                   if        new.odarid = Old.odarid
-     c                   callp     UpdArt((New.odqty - Old.odqty)
-     c                              - (New.odqtyLiv - Old.odqtyLiv)
-     c                             :new.odarid)
-     c                   else
-     c                   callp     UpdArt(new.odqty- new.odqtyliv:new.odarid)
-     c                   callp     UpdArt(-Old.odqty + Old.odqtyliv:old.odarid)
-     c                   endif
-     c                   endsl
-     c                   return
+pDs_PiParm_001 = %Addr(Ds_PiParm_001);
+If               %parms = 0;
+  *INLR = '1';
+  Return;
+EndIf;
+Select;
+  When teven = '1';
+    pn = %addr(parm1) + newoff;
+    UpdArt(new.odqty:new.odarid);
+  When teven = '2';
+    po = %addr(parm1) + oldoff;
+    CallP(e) addlogEntry('ORD700:Order Line deleted ' +
+        %char(Old.odorid) + ' ' + %char(Old.odline)
+         + ' article : ' + old.odarid
+         + ' quantity : ' + %char(old.odqty));
+    UpdArt(-Old.odqty + Old.odqtyliv:old.odarid);
+  When teven = '3';
+    pn = %addr(parm1) + newoff;
+    po = %addr(parm1) + oldoff;
+    If new.odarid = Old.odarid;
+      UpdArt((New.odqty - Old.odqty)
+           - (New.odqtyLiv - Old.odqtyLiv)
+          :new.odarid);
+    Else;
+      UpdArt(new.odqty- new.odqtyliv:new.odarid);
+      UpdArt(-Old.odqty + Old.odqtyliv:old.odarid);
+    EndIf;
+EndSl;
+Return;
 
-     P UpdArt          b
-     d UpdArt          pi
-     d   qty                          5  0 value
-     d   id                                like(new.ODARID)
-     c                   if        qty = 0
-     c                   return
-     c                   ENDIF
-     c     id            chain     article1
-     c                   if        not %found
-     c                   return
-     c                   ENDIF
-     c                   eval      ARCUSQTY += qty
-     c                   update    farti
-     P UpdArt          e
+Dcl-Proc UpdArt;
+  Dcl-Pi UpdArt;
+    qty             Packed(5:0)     value;
+    id              like(new.ODARID);
+  End-Pi;
+  If qty = 0;
+    Return;
+  EndIf;
+  Chain id article1;
+  If not %found;
+    Return;
+  EndIf;
+  ARCUSQTY += qty;
+  Update farti;
+End-Proc UpdArt;
